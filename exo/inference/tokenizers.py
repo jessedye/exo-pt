@@ -7,6 +7,17 @@ import numpy as np
 from exo.helpers import DEBUG
 from exo.download.new_shard_download import ensure_downloads_dir
 
+QWEN_SPECIAL_TOKENIZER_REPOS = {
+    "qwen-2.5-coder-1.5b": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "qwen-2.5-coder-3b": "Qwen/Qwen2.5-Coder-3B-Instruct",
+    "qwen-2.5-coder-7b": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "qwen-2.5-coder-14b": "Qwen/Qwen2.5-Coder-14B-Instruct",
+    "qwen-2.5-coder-32b": "Qwen/Qwen2.5-Coder-32B-Instruct",
+}
+
+def get_tokenizer_repo(model_id: str) -> str:
+    """Return HF tokenizer repo path for model_id"""
+    return QWEN_SPECIAL_TOKENIZER_REPOS.get(model_id.lower(), model_id)
 
 class DummyTokenizer:
   def __init__(self):
@@ -23,7 +34,14 @@ class DummyTokenizer:
     return "dummy" * len(tokens)
 
 
-async def resolve_tokenizer(repo_id: Union[str, PathLike]):
+async def resolve_tokenizer(model_id: Union[str, PathLike]):
+  # Map model_id to correct tokenizer repo path if needed
+  from exo.inference.tokenizers import get_tokenizer_repo
+  repo_id = get_tokenizer_repo(str(model_id))
+
+  if DEBUG >= 1:
+      print(f"[resolve_tokenizer] Final repo path to load: {repo_id}")
+
   if repo_id == "dummy":
     return DummyTokenizer()
   local_path = await ensure_downloads_dir()/str(repo_id).replace("/", "--")
